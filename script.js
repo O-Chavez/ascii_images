@@ -20,8 +20,6 @@ class Cell {
   }
 
   draw(ctx){
-    ctx.fillStyle = 'white';
-    ctx.fillText(this.symbol, this.x, this.y,)
     ctx.fillStyle = this.color;
     ctx.fillText(this.symbol, this.x, this.y,)
   }
