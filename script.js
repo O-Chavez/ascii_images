@@ -23,26 +23,23 @@ resolutionSlider.addEventListener('change', handelResolutionSlider);
 
 // // input slider
 const inputRadios = document.querySelectorAll('input[name="input"]');
-
 inputRadios.forEach(radio => {
   radio.addEventListener('change', () => {
     if (radio.value === 'img') {
-      displayDefaultImage();
+      displayDefaultImage(defaultImage);
     } else if (radio.value === 'webcam') {
-      // Handle webcam input
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
           const video = document.createElement('video');
           video.srcObject = stream;
           video.onloadedmetadata = function() {
-            console.log('Video metadata loaded');
-
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
-            effect.draw(10);
             video.play();
-          }
+            if (radio.checked) {
+              displayWebcamFeed(video);
+            }
+          };
         })
         .catch(error => {
           console.error('Error loading webcam:', error);
@@ -50,6 +47,14 @@ inputRadios.forEach(radio => {
     }
   });
 });
+
+function displayWebcamFeed(video) {
+  const drawFrame = () => {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    requestAnimationFrame(drawFrame);
+  };
+  requestAnimationFrame(drawFrame);
+}
 
 class Cell {
   constructor(x, y, symbol, color){
@@ -164,6 +169,27 @@ function displayDefaultImage (resolution) {
       console.error('Error loading image:', error);
     });
 }
+
+// function displayWebcam(resolution) {
+//   // Handle webcam input
+//   navigator.mediaDevices.getUserMedia({ video: true })
+//     .then(stream => {
+//       const video = document.createElement('video');
+//       video.srcObject = stream;
+//       video.onloadedmetadata = function() {
+//         console.log('Video metadata loaded');
+
+//         canvas.width = video.videoWidth;
+//         canvas.height = video.videoHeight;
+//         effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+//         effect.draw(resolution ?? 10);
+//         video.play();
+//       }
+//     })
+//     .catch(error => {
+//       console.error('Error loading webcam:', error);
+//     });
+// }
 
 displayDefaultImage();
 
