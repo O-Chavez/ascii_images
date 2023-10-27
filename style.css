@@ -36,3 +36,18 @@ body {
   color: white;
   font-size: 15px;
 }
+
+.inputContiner {
+  color: white;
+  display: flex;
+}
+
+.inputContiner > input {
+  width: 10%;
+}
+
+.inputContiner > label {
+  width: 35%;
+  color: white;
+  font-size: 15px;
+}
