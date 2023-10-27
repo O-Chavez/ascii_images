@@ -50,9 +50,21 @@ inputRadios.forEach(radio => {
 
 function displayWebcamFeed(video) {
   const drawFrame = () => {
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+    effect.draw(10);
     requestAnimationFrame(drawFrame);
   };
+  requestAnimationFrame(drawFrame);
+
+
+
+
+
+
+  // const drawFrame = () => {
+  //   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  //   requestAnimationFrame(drawFrame);
+  // };
   requestAnimationFrame(drawFrame);
 }
 
