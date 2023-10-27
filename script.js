@@ -27,7 +27,7 @@ const inputRadios = document.querySelectorAll('input[name="input"]');
 inputRadios.forEach(radio => {
   radio.addEventListener('change', () => {
     if (radio.value === 'img') {
-      initDefaultImage();
+      displayDefaultImage();
     } else if (radio.value === 'webcam') {
       // Handle webcam input
       navigator.mediaDevices.getUserMedia({ video: true })
@@ -140,27 +140,12 @@ function handelResolutionSlider() {
     resolutionLabel.innerHTML = 'Original Image';
     ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
   } else {
-    const defaultImage = new Image();
-  fetch('assets/default_image.txt')
-    .then(response => response.text())
-    .then(base64String => {
-      defaultImage.src =  base64String;
-      let effect;
-      defaultImage.onload = function initalize() {
-          canvas.width = defaultImage.width;
-          canvas.height = defaultImage.height;
-          effect = new AsciiEffect(ctx, defaultImage, defaultImage.width, defaultImage.height);
-          effect.draw(parseInt(resolutionSlider.value));
-      };
-    })
-    .catch(error => {
-      console.error('Error loading image:', error);
-    });
+    displayDefaultImage(parseInt(resolutionSlider.value));
     resolutionLabel.innerHTML = 'Resolution: ' + resolutionSlider.value + ' px'
   }
 }
 
-function initDefaultImage () {
+function displayDefaultImage (resolution) {
   // Handle IMG input
   const defaultImage = new Image();
   fetch('assets/default_image.txt')
@@ -172,7 +157,7 @@ function initDefaultImage () {
           canvas.width = defaultImage.width;
           canvas.height = defaultImage.height;
           effect = new AsciiEffect(ctx, defaultImage, defaultImage.width, defaultImage.height);
-          effect.draw(10);
+          effect.draw(resolution ?? 10);
       };
     })
     .catch(error => {
@@ -180,7 +165,7 @@ function initDefaultImage () {
     });
 }
 
-initDefaultImage();
+displayDefaultImage();
 
 
 
