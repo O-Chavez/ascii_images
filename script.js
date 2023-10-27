@@ -1,14 +1,14 @@
 const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 
 const density = "Ñ@#W$9876543210?!abc;:+=-,._ ";
 
-const image1 = new Image();
+const defaultImage = new Image();
 fetch('assets/default_image.txt')
   .then(response => response.text())
   .then(base64String => {
-    image1.src =  base64String;
+    defaultImage.src =  base64String;
     
   })
   .catch(error => {
@@ -24,60 +24,30 @@ resolutionSlider.addEventListener('change', handelResolutionSlider);
 // // input slider
 const inputRadios = document.querySelectorAll('input[name="input"]');
 
-// inputRadios.forEach(radio => {
-//   radio.addEventListener('change', () => {
-//     if (radio.value === 'img') {
-//       console.log('img');
-//       // Handle IMG input
-//     } else if (radio.value === 'webcam') {
-//       console.log('webcam');
-//       // Handle webcam input
-//       // ...
-//     }
-//   });
-// });
-
-// inputRadios.forEach(radio => {
-//   radio.addEventListener('change', () => {
-//     if (radio.value === 'img') {
-//       // Handle IMG input
-//       const image1 = new Image();
-//       fetch('assets/default_image.txt')
-//         .then(response => response.text())
-//         .then(base64String => {
-//           image1.src =  base64String;
-//           let effect;
-//           image1.onload = function initalize() {
-//               canvas.width = image1.width;
-//               canvas.height = image1.height;
-//               effect = new AsciiEffect(ctx, image1.width, image1.height);
-//               effect.draw(10);
-//           }
-        
-//         })
-//         .catch(error => {
-//           console.error('Error loading image:', error);
-//         });
-//     } else if (radio.value === 'webcam') {
-//       // Handle webcam input
-//       navigator.mediaDevices.getUserMedia({ video: true })
-//         .then(stream => {
-//           const video = document.createElement('video');
-//           video.srcObject = stream;
-//           video.onloadedmetadata = function() {
-//             canvas.width = video.videoWidth;
-//             canvas.height = video.videoHeight;
-//             effect = new AsciiEffect(ctx, video.videoWidth, video.videoHeight);
-//             effect.draw(10);
-//             video.play();
-//           }
-//         })
-//         .catch(error => {
-//           console.error('Error loading webcam:', error);
-//         });
-//     }
-//   });
-// });
+inputRadios.forEach(radio => {
+  radio.addEventListener('change', () => {
+    if (radio.value === 'img') {
+      initDefaultImage();
+    } else if (radio.value === 'webcam') {
+      // Handle webcam input
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          video.onloadedmetadata = function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+            effect.draw(10);
+            video.play();
+          }
+        })
+        .catch(error => {
+          console.error('Error loading webcam:', error);
+        });
+    }
+  });
+});
 
 class Cell {
   constructor(x, y, symbol, color){
@@ -165,20 +135,34 @@ class AsciiEffect {
 function handelResolutionSlider() {
   if (resolutionSlider.value == 1) {
     resolutionLabel.innerHTML = 'Original Image';
-    ctx.drawImage(image1, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
   } else {
     resolutionLabel.innerHTML = 'Resolution: ' + resolutionSlider.value + ' px'
     effect.draw(parseInt(resolutionSlider.value));
   }
 }
 
-let effect;
-image1.onload = function initalize() {
-    canvas.width = image1.width;
-    canvas.height = image1.height;
-    effect = new AsciiEffect(ctx, image1, image1.width, image1.height);
-    effect.draw(10);
+function initDefaultImage () {
+  // Handle IMG input
+  const defaultImage = new Image();
+  fetch('assets/default_image.txt')
+    .then(response => response.text())
+    .then(base64String => {
+      defaultImage.src =  base64String;
+      let effect;
+      defaultImage.onload = function initalize() {
+          canvas.width = defaultImage.width;
+          canvas.height = defaultImage.height;
+          effect = new AsciiEffect(ctx, defaultImage, defaultImage.width, defaultImage.height);
+          effect.draw(10);
+      };
+    })
+    .catch(error => {
+      console.error('Error loading image:', error);
+    });
 }
+
+initDefaultImage();
 
 
 
