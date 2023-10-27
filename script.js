@@ -35,6 +35,8 @@ inputRadios.forEach(radio => {
           const video = document.createElement('video');
           video.srcObject = stream;
           video.onloadedmetadata = function() {
+            console.log('Video metadata loaded');
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
@@ -70,12 +72,12 @@ class AsciiEffect {
   #width;
   #height;
 
-  constructor(ctx, image, width, height) {
+  constructor(ctx, input, width, height) {
     console.log('Creating AsciiEffect object')
     this.#ctx = ctx;
     this.#width = width;
     this.#height = height;
-    this.#ctx.drawImage(image, 0, 0, this.#width, this.#height);
+    this.#ctx.drawImage(input, 0, 0, this.#width, this.#height);
     this.#pixels = this.#ctx.getImageData(0, 0, this.#width, this.#height);
   }
 
@@ -127,6 +129,7 @@ class AsciiEffect {
   }
 
   draw(cellSize){
+    
     this.#scanImage(cellSize);
     this.#drawAscii();
   }
@@ -137,8 +140,23 @@ function handelResolutionSlider() {
     resolutionLabel.innerHTML = 'Original Image';
     ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
   } else {
+    const defaultImage = new Image();
+  fetch('assets/default_image.txt')
+    .then(response => response.text())
+    .then(base64String => {
+      defaultImage.src =  base64String;
+      let effect;
+      defaultImage.onload = function initalize() {
+          canvas.width = defaultImage.width;
+          canvas.height = defaultImage.height;
+          effect = new AsciiEffect(ctx, defaultImage, defaultImage.width, defaultImage.height);
+          effect.draw(parseInt(resolutionSlider.value));
+      };
+    })
+    .catch(error => {
+      console.error('Error loading image:', error);
+    });
     resolutionLabel.innerHTML = 'Resolution: ' + resolutionSlider.value + ' px'
-    effect.draw(parseInt(resolutionSlider.value));
   }
 }
 
