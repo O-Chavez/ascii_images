@@ -1,7 +1,6 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-
 const density = "Ñ@#W$9876543210?!abc;:+=-,._ ";
 
 const defaultImage = new Image();
@@ -20,52 +19,55 @@ const resolutionSlider = document.getElementById('resolution');
 const resolutionLabel = document.getElementById('resolutionLabel');
 resolutionSlider.addEventListener('change', handelResolutionSlider);
 
+const webcamRadio = document.getElementById('webcam');
+
 
 // // input slider
 const inputRadios = document.querySelectorAll('input[name="input"]');
 inputRadios.forEach(radio => {
   radio.addEventListener('change', () => {
     if (radio.value === 'img') {
-      displayDefaultImage(defaultImage);
+      stopAsciiWebcamFeed();
+      displayImage(parseInt(resolutionSlider.value));
     } else if (radio.value === 'webcam') {
-      navigator.mediaDevices.getUserMedia({ video: true })
+      displayAsciiWebcamFeed();
+    }
+  });
+});
+
+
+let videoStream;
+
+function displayAsciiWebcamFeed() {
+    navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
+          videoStream = stream;
           const video = document.createElement('video');
           video.srcObject = stream;
           video.onloadedmetadata = function() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             video.play();
-            if (radio.checked) {
-              displayWebcamFeed(video);
-            }
+
+              const drawFrame = () => {
+                const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+                effect.draw(parseInt(resolutionSlider.value) ?? 10);
+                requestAnimationFrame(drawFrame);
+              };
+              requestAnimationFrame(drawFrame);
           };
         })
         .catch(error => {
           console.error('Error loading webcam:', error);
         });
-    }
-  });
-});
-
-function displayWebcamFeed(video) {
-  const drawFrame = () => {
-    const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
-    effect.draw(10);
-    requestAnimationFrame(drawFrame);
-  };
-  requestAnimationFrame(drawFrame);
+}
 
 
 
-
-
-
-  // const drawFrame = () => {
-  //   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  //   requestAnimationFrame(drawFrame);
-  // };
-  requestAnimationFrame(drawFrame);
+function stopAsciiWebcamFeed() {
+  if (videoStream) {
+    videoStream.getTracks().forEach(track => track.stop());
+  }
 }
 
 class Cell {
@@ -90,7 +92,6 @@ class AsciiEffect {
   #height;
 
   constructor(ctx, input, width, height) {
-    console.log('Creating AsciiEffect object')
     this.#ctx = ctx;
     this.#width = width;
     this.#height = height;
@@ -153,16 +154,43 @@ class AsciiEffect {
 }
 
 function handelResolutionSlider() {
-  if (resolutionSlider.value == 1) {
+  const resolution = parseInt(resolutionSlider.value);
+  if (resolution === 1) {
+    // ----- full resolution -----
     resolutionLabel.innerHTML = 'Original Image';
-    ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
+    if (webcamRadio.checked) {
+      // #----- webcam -----#
+      console.log('full res webcam');
+      stopAsciiWebcamFeed();
+      displayDefaultWebcam();
+
+    } else {
+      // #----- IMG -----#
+      ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
+    }
   } else {
-    displayDefaultImage(parseInt(resolutionSlider.value));
-    resolutionLabel.innerHTML = 'Resolution: ' + resolutionSlider.value + ' px'
+    // ----- ascii resolution -----
+    resolutionLabel.innerHTML = 'Resolution: ' + resolution + ' px';
+    if (webcamRadio.checked) {
+      // #----- webcam -----#
+
+      // displayAsciiWebcamFeed(video, resolution);
+      displayAsciiWebcamFeed();
+     
+    } else {
+      // #----- IMG -----#
+      displayImage(resolution);
+    }
   }
 }
 
-function displayDefaultImage (resolution) {
+function displayImage (resolution) {
+  // disable video feed if playing
+  const video = document.getElementById('webcamVideo');
+  if (video) {
+   console.log('video', video);
+    video.pause();
+  }
   // Handle IMG input
   const defaultImage = new Image();
   fetch('assets/default_image.txt')
@@ -182,28 +210,30 @@ function displayDefaultImage (resolution) {
     });
 }
 
-// function displayWebcam(resolution) {
-//   // Handle webcam input
-//   navigator.mediaDevices.getUserMedia({ video: true })
-//     .then(stream => {
-//       const video = document.createElement('video');
-//       video.srcObject = stream;
-//       video.onloadedmetadata = function() {
-//         console.log('Video metadata loaded');
+function displayDefaultWebcam() {
+  navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          video.onloadedmetadata = function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            video.play();
+            const drawFrame = () => {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              requestAnimationFrame(drawFrame);
+            };
+            requestAnimationFrame(drawFrame);
+          };
+        })
+        .catch(error => {
+          console.error('Error loading webcam:', error);
+        });
+}
 
-//         canvas.width = video.videoWidth;
-//         canvas.height = video.videoHeight;
-//         effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
-//         effect.draw(resolution ?? 10);
-//         video.play();
-//       }
-//     })
-//     .catch(error => {
-//       console.error('Error loading webcam:', error);
-//     });
-// }
 
-displayDefaultImage();
+
+displayImage();
 
 
 
