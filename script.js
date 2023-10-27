@@ -3,17 +3,6 @@ const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 const density = "Ñ@#W$9876543210?!abc;:+=-,._ ";
 
-const defaultImage = new Image();
-fetch('assets/default_image.txt')
-  .then(response => response.text())
-  .then(base64String => {
-    defaultImage.src =  base64String;
-    
-  })
-  .catch(error => {
-    console.error('Error loading image:', error);
-  });
-
 //  resolution slider
 const resolutionSlider = document.getElementById('resolution');
 const resolutionLabel = document.getElementById('resolutionLabel');
