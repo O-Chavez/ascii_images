@@ -39,7 +39,7 @@ body {
 }
 
 .controls > label {
-  width: 35%;
+  width: 65%;
   color: white;
   font-size: 15px;
 }
@@ -47,6 +47,7 @@ body {
 .inputContiner {
   color: white;
   display: flex;
+  gap: 20px;
 }
 
 .inputContiner > label {

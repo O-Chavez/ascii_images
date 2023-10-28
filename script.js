@@ -1,7 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-const density = "Ñ@#W$9876543210?!abc;:+=-,._ ";
+const density = "Ñ@#W$9876543210?!abc;:+=_-,. ";
 
 //  resolution slider
 const resolutionSlider = document.getElementById('resolution');
@@ -20,13 +20,15 @@ inputRadios.forEach(radio => {
       displayImage(parseInt(resolutionSlider.value));
     } else if (radio.value === 'webcam') {
       displayAsciiWebcamFeed();
+    } else if (radio.value === 'video') {
+      stopAsciiWebcamFeed();
+      displayVideoAsciiFeed();
     }
   });
 });
 
 
 let videoStream;
-
 function displayAsciiWebcamFeed() {
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
@@ -57,6 +59,24 @@ function stopAsciiWebcamFeed() {
   if (videoStream) {
     videoStream.getTracks().forEach(track => track.stop());
   }
+}
+
+function displayVideoAsciiFeed(){
+  const video = document.createElement('video');
+video.src = 'assets/incense burning.mp4';
+video.onloadedmetadata = function() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  video.play();
+
+  const drawFrame = () => {
+    const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+    effect.draw(parseInt(resolutionSlider.value) ?? 10);
+    requestAnimationFrame(drawFrame);
+  };
+  requestAnimationFrame(drawFrame);
+};
+
 }
 
 class Cell {
@@ -101,9 +121,15 @@ class AsciiEffect {
     if (g > 80) return "_"
     if (g > 60) return ","
     if (g > 40) return "."
-    if (g > 20) return " "
-    else return '';
+    if (g > 20) return "."
+    if (g > 20) return "."
+    if (g > 20) return "."
+    else return '.';
   }
+  // #convertToSymbol(g) {
+  //   const densityIndex = Math.floor((g / 255) * (density.length - 1));
+  //   return density[densityIndex];
+  // }
 
   #scanImage(cellSize) {
     this.#imageCellArray = [];
