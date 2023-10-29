@@ -1,3 +1,5 @@
+import { AsciiEffect, Cell } from './ascii_effect.js';
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
@@ -9,6 +11,8 @@ const resolutionLabel = document.getElementById('resolutionLabel');
 resolutionSlider.addEventListener('change', handelResolutionSlider);
 
 const webcamRadio = document.getElementById('webcam');
+const imgRadio = document.getElementById('img');
+const videoRadio = document.getElementById('video');
 
 
 // // input slider
@@ -63,109 +67,54 @@ function stopAsciiWebcamFeed() {
 
 function displayVideoAsciiFeed(){
   const video = document.createElement('video');
-video.src = 'assets/incense burning.mp4';
-video.onloadedmetadata = function() {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  video.play();
+  video.src = 'assets/incense burning.mp4';
+  video.onloadedmetadata = function() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    video.play();
 
-  const drawFrame = () => {
-    const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
-    effect.draw(parseInt(resolutionSlider.value) ?? 10);
+    const drawFrame = () => {
+      const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+      effect.draw(parseInt(resolutionSlider.value) ?? 10);
+      requestAnimationFrame(drawFrame);
+    };
     requestAnimationFrame(drawFrame);
+
+      // add event listener to loop video
+  video.addEventListener('ended', function() {
+    video.currentTime = 0;
+    video.play();
+  });
   };
-  requestAnimationFrame(drawFrame);
-};
-
 }
 
-class Cell {
-  constructor(x, y, symbol, color){
-    this.x = x;
-    this.y = y;
-    this.symbol = symbol;
-    this.color = color;
-  }
-
-  draw(ctx){
-    ctx.fillStyle = this.color;
-    ctx.fillText(this.symbol, this.x, this.y,)
+function stopVideoAsciiFeed() {
+  if (videoStream) {
+    videoStream.getTracks().forEach(track => track.stop());
   }
 }
 
-class AsciiEffect {
-  #imageCellArray = [];
-  #pixels = [];
-  #ctx;
-  #width;
-  #height;
+function displayRegularVideoFeed() {
+  const video = document.createElement('video');
+  video.src = 'assets/incense burning.mp4';
+  video.onloadedmetadata = function() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    video.play();
 
-  constructor(ctx, input, width, height) {
-    this.#ctx = ctx;
-    this.#width = width;
-    this.#height = height;
-    this.#ctx.drawImage(input, 0, 0, this.#width, this.#height);
-    this.#pixels = this.#ctx.getImageData(0, 0, this.#width, this.#height);
-  }
-
-  #convertToSymbol(g){
-    if (g > 250) return "@"
-    if (g > 240) return "@"
-    if (g > 220) return "#"
-    if (g > 200) return "W"
-    if (g > 180) return "$"
-    if (g > 160) return "?"
-    if (g > 140) return "%"
-    if (g > 120) return ":"
-    if (g > 100) return ";"
-    if (g > 80) return "_"
-    if (g > 60) return ","
-    if (g > 40) return "."
-    if (g > 20) return "."
-    if (g > 20) return "."
-    if (g > 20) return "."
-    else return '.';
-  }
-  // #convertToSymbol(g) {
-  //   const densityIndex = Math.floor((g / 255) * (density.length - 1));
-  //   return density[densityIndex];
-  // }
-
-  #scanImage(cellSize) {
-    this.#imageCellArray = [];
-    for (let y = 0; y < this.#pixels.height; y += cellSize) {
-      for (let x = 0; x < this.#pixels.width; x += cellSize){
-        const posX = x * 4;
-        const posY = y * 4;
-        const pos = (posY * this.#pixels.width) + posX;
-
-        if(this.#pixels.data[pos + 3] > 128) {
-          const red = this.#pixels.data[pos];
-          const green = this.#pixels.data[pos + 1];
-          const blue = this.#pixels.data[pos + 2];
-          const total = red + green + blue;
-          const averageColorValue = total / 3;
-          const color = "rgb(" + red + "," + green + "," + blue + ")";
-          const symbol = this.#convertToSymbol(averageColorValue);
-          this.#imageCellArray.push(new Cell(x,y, symbol, color));
-        }
-      }
+    const drawFrame = () => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      requestAnimationFrame(drawFrame);
     }
-  }
+    requestAnimationFrame(drawFrame);
 
-  #drawAscii() {
-    this.#ctx.clearRect(0 , 0, this.#width, this.#height);
-    for (let i = 0; i < this.#imageCellArray.length; i++) {
-      this.#imageCellArray[i].draw(this.#ctx);
-      
+    // add event listener to loop video
+    video.addEventListener('ended', function() {
+      video.currentTime = 0;
+      video.play();
     }
-  }
-
-  draw(cellSize){
-    
-    this.#scanImage(cellSize);
-    this.#drawAscii();
-  }
+    );
+  };
 }
 
 function handelResolutionSlider() {
@@ -179,9 +128,14 @@ function handelResolutionSlider() {
       stopAsciiWebcamFeed();
       displayDefaultWebcam();
 
-    } else {
+    } else if (imgRadio.checked) {
       // #----- IMG -----#
       ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
+    } else if (videoRadio.checked) {
+      console.log('displaying full resolution video');
+      // #----- video -----#
+      stopVideoAsciiFeed();
+      displayRegularVideoFeed();
     }
   } else {
     // ----- ascii resolution -----
@@ -192,9 +146,13 @@ function handelResolutionSlider() {
       // displayAsciiWebcamFeed(video, resolution);
       displayAsciiWebcamFeed();
      
-    } else {
+    } else if (imgRadio.checked) {
       // #----- IMG -----#
       displayImage(resolution);
+    } else if (videoRadio.checked) {
+      // #----- video -----#
+      stopAsciiWebcamFeed();
+      displayVideoAsciiFeed();
     }
   }
 }
