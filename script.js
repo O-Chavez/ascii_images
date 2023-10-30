@@ -3,100 +3,142 @@ import { AsciiEffect, Cell } from './ascii_effect.js';
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-const density = "Ñ@#W$9876543210?!abc;:+=_-,. ";
-
 //  resolution slider
 const resolutionSlider = document.getElementById('resolution');
 const resolutionLabel = document.getElementById('resolutionLabel');
-resolutionSlider.addEventListener('change', handelResolutionSlider);
-
+resolutionSlider.addEventListener('input', handelResolutionSlider);
 const webcamRadio = document.getElementById('webcam');
 const imgRadio = document.getElementById('img');
 const videoRadio = document.getElementById('video');
 
+let defaultImage = new Image();
+let video = null
 
-// // input slider
+initDefaultImage();
+
+// input options
 const inputRadios = document.querySelectorAll('input[name="input"]');
 inputRadios.forEach(radio => {
   radio.addEventListener('change', () => {
     if (radio.value === 'img') {
-      stopAsciiWebcamFeed();
-      displayImage(parseInt(resolutionSlider.value));
+      stopVideoFeed();
+      displayImage();
     } else if (radio.value === 'webcam') {
-      displayAsciiWebcamFeed();
+      if (video.id === 'asciiVideo' || video.id === 'regularVideo' || video.id === 'webcamVideo') {
+        stopVideoFeed();
+        displayAsciiWebcamFeed();
+      }
     } else if (radio.value === 'video') {
-      stopAsciiWebcamFeed();
       displayVideoAsciiFeed();
     }
   });
 });
 
-
-let videoStream;
-function displayAsciiWebcamFeed() {
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          videoStream = stream;
-          const video = document.createElement('video');
-          video.srcObject = stream;
-          video.onloadedmetadata = function() {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            video.play();
-
-              const drawFrame = () => {
-                const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
-                effect.draw(parseInt(resolutionSlider.value) ?? 10);
-                requestAnimationFrame(drawFrame);
-              };
-              requestAnimationFrame(drawFrame);
-          };
-        })
-        .catch(error => {
-          console.error('Error loading webcam:', error);
-        });
+function initDefaultImage() {
+  fetch('assets/default_image.txt')
+    .then(response => response.text())
+    .then(base64String => {
+      defaultImage.src = base64String;
+    })
+    .catch(error => {
+      console.error('Error loading image:', error);
+    });
 }
 
+function handelResolutionSlider() {
+  const resolution = parseInt(resolutionSlider.value);
+  if (resolution === 1) {
+    // ----- full resolution -----
+    resolutionLabel.innerHTML = 'Original Image';
+    if (webcamRadio.checked) {
+      // #----- webcam -----#
+      displayDefaultWebcam();
 
-
-function stopAsciiWebcamFeed() {
-  if (videoStream) {
-    videoStream.getTracks().forEach(track => track.stop());
+    } else if (imgRadio.checked) {
+      // #----- IMG -----#
+      ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
+    } else if (videoRadio.checked) {
+      console.log('displaying full resolution video');
+      // #----- video -----#
+      displayRegularVideoFeed();
+    }
+  } else {
+    // ----- ascii resolution -----
+    resolutionLabel.innerHTML = 'Resolution: ' + resolution + ' px';
+    if (webcamRadio.checked) {
+      // #----- webcam -----#
+      if (resolution < 5) {
+        resolutionLabel.innerHTML = 'Original Image';
+        displayDefaultWebcam();
+      } else {
+        displayAsciiWebcamFeed();
+      }
+      
+    } else if (imgRadio.checked) {
+      // #----- IMG -----#
+      displayImage();
+    } else if (videoRadio.checked) {
+      // #----- video -----#
+      if (resolution < 10) {
+        resolutionLabel.innerHTML = 'Original Image';
+        stopVideoFeed();
+        displayRegularVideoFeed();
+      } else {
+        if (video.id == 'regularVideo') {
+          stopVideoFeed();
+          displayVideoAsciiFeed();
+        }
+      
+      }
+    }
   }
 }
 
-function displayVideoAsciiFeed(){
-  const video = document.createElement('video');
-  video.src = 'assets/incense burning.mp4';
+function displayVideoAsciiFeed() {
+  if(video !== null && (video.id === 'regularVideo' || video.id === 'webcamVideo' || video.id === 'asciiWebcamVideo')) { 
+    stopVideoFeed();
+  }
+
+  video = document.createElement('video');
+  video.src = 'assets/campfire.mp4';
+  video.id = 'asciiVideo';
+  // video.width = 640;
+  // video.height = 480;
   video.onloadedmetadata = function() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     video.play();
 
-    const drawFrame = () => {
-      const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
-      effect.draw(parseInt(resolutionSlider.value) ?? 10);
+    let lastTime = 0;
+    const fps = 30; // set the desired fps
+    const interval = 1000 / fps;
+    const drawFrame = (currentTime) => {
+      const deltaTime = currentTime - lastTime;
+      if (deltaTime >= interval) {
+        lastTime = currentTime;
+        const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+        effect.draw(parseInt(resolutionSlider.value) ?? 10);
+      }
       requestAnimationFrame(drawFrame);
     };
     requestAnimationFrame(drawFrame);
 
-      // add event listener to loop video
-  video.addEventListener('ended', function() {
-    video.currentTime = 0;
-    video.play();
-  });
+    // add event listener to loop video
+    video.addEventListener('ended', function() {
+      video.currentTime = 0;
+      video.play();
+    });
   };
 }
 
-function stopVideoAsciiFeed() {
-  if (videoStream) {
-    videoStream.getTracks().forEach(track => track.stop());
-  }
-}
-
 function displayRegularVideoFeed() {
-  const video = document.createElement('video');
-  video.src = 'assets/incense burning.mp4';
+  if (video !== null && (video.id === 'asciiVideo' || video.id === 'webcamVideo' || video.id === 'asciiWebcamVideo')) {
+    stopVideoFeed();
+  }
+
+  video = document.createElement('video');
+  video.src = 'assets/campfire.mp4';
+  video.id = 'regularVideo';
   video.onloadedmetadata = function() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -117,55 +159,21 @@ function displayRegularVideoFeed() {
   };
 }
 
-function handelResolutionSlider() {
-  const resolution = parseInt(resolutionSlider.value);
-  if (resolution === 1) {
-    // ----- full resolution -----
-    resolutionLabel.innerHTML = 'Original Image';
-    if (webcamRadio.checked) {
-      // #----- webcam -----#
-      console.log('full res webcam');
-      stopAsciiWebcamFeed();
-      displayDefaultWebcam();
-
-    } else if (imgRadio.checked) {
-      // #----- IMG -----#
-      ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
-    } else if (videoRadio.checked) {
-      console.log('displaying full resolution video');
-      // #----- video -----#
-      stopVideoAsciiFeed();
-      displayRegularVideoFeed();
-    }
-  } else {
-    // ----- ascii resolution -----
-    resolutionLabel.innerHTML = 'Resolution: ' + resolution + ' px';
-    if (webcamRadio.checked) {
-      // #----- webcam -----#
-
-      // displayAsciiWebcamFeed(video, resolution);
-      displayAsciiWebcamFeed();
-     
-    } else if (imgRadio.checked) {
-      // #----- IMG -----#
-      displayImage(resolution);
-    } else if (videoRadio.checked) {
-      // #----- video -----#
-      stopAsciiWebcamFeed();
-      displayVideoAsciiFeed();
-    }
+function stopVideoFeed() {
+  if (video) {
+    console.log('stopping video feed');
+    video.pause();
+    video.remove();
+    video = null;
   }
 }
 
-function displayImage (resolution) {
+function displayImage () {
   // disable video feed if playing
-  const video = document.getElementById('webcamVideo');
   if (video) {
-   console.log('video', video);
-    video.pause();
+    stopVideoFeed();
   }
   // Handle IMG input
-  const defaultImage = new Image();
   fetch('assets/default_image.txt')
     .then(response => response.text())
     .then(base64String => {
@@ -175,7 +183,7 @@ function displayImage (resolution) {
           canvas.width = defaultImage.width;
           canvas.height = defaultImage.height;
           effect = new AsciiEffect(ctx, defaultImage, defaultImage.width, defaultImage.height);
-          effect.draw(resolution ?? 10);
+          effect.draw(parseInt(resolutionSlider.value) ?? 10);
       };
     })
     .catch(error => {
@@ -183,11 +191,44 @@ function displayImage (resolution) {
     });
 }
 
+function displayAsciiWebcamFeed() {
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      video = document.createElement('video');
+      video.srcObject = stream;
+      video.id = 'asciiWebcamVideo';
+      video.onloadedmetadata = function() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        video.play();
+
+        let lastTime = 0;
+        const fps = 30; // set the desired fps
+        const interval = 1000 / fps;
+        const drawFrame = (currentTime) => {
+          const deltaTime = currentTime - lastTime;
+          if (deltaTime >= interval) {
+            lastTime = currentTime;
+            const effect = new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight);
+            effect.draw(parseInt(resolutionSlider.value) ?? 10);
+          }
+          requestAnimationFrame(drawFrame);
+        };
+        requestAnimationFrame(drawFrame);
+      };
+    })
+    .catch(error => {
+      console.error('Error loading webcam:', error);
+    });
+
+}
+
 function displayDefaultWebcam() {
   navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
-          const video = document.createElement('video');
+          video = document.createElement('video');
           video.srcObject = stream;
+          video.id = 'webcamVideo';
           video.onloadedmetadata = function() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -203,8 +244,6 @@ function displayDefaultWebcam() {
           console.error('Error loading webcam:', error);
         });
 }
-
-
 
 displayImage();
 

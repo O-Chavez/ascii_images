@@ -18,6 +18,7 @@ export class AsciiEffect {
   #ctx;
   #width;
   #height;
+  // #density = '@#W$?%:_,. ';
 
   constructor(ctx, input, width, height) {
     this.#ctx = ctx;
@@ -45,9 +46,10 @@ export class AsciiEffect {
     if (g > 20) return "."
     else return '.';
   }
+  
   // #convertToSymbol(g) {
-  //   const densityIndex = Math.floor((g / 255) * (density.length - 1));
-  //   return density[densityIndex];
+  //   const densityIndex = Math.floor((g / 255) * (this.#density.length - 1));
+  //   return this.#density[densityIndex];
   // }
 
   #scanImage(cellSize) {
