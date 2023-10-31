@@ -101,33 +101,39 @@ function displayVideoAsciiFeed() {
   ) {
     stopVideoFeed();
   }
+  assignVideoToCanvas('asciiVideo');
+}
 
+function assignVideoToCanvas(id) {
   video = document.createElement('video');
   video.src = 'assets/campfire.mp4';
-  video.id = 'asciiVideo';
+  video.id = id;
   video.onloadedmetadata = function () {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     video.play();
 
     const drawFrame = () => {
-      const effect = new AsciiEffect(
-        ctx,
-        video,
-        video.videoWidth,
-        video.videoHeight
-      );
-      effect.draw(parseInt(resolutionSlider.value) ?? 10);
+      if (id === 'asciiVideo') {
+        const effect = new AsciiEffect(
+          ctx,
+          video,
+          video.videoWidth,
+          video.videoHeight
+        );
+        effect.draw(parseInt(resolutionSlider.value) ?? 10);
+      } else {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
       requestAnimationFrame(drawFrame);
     };
     requestAnimationFrame(drawFrame);
-
-    // add event listener to loop video
-    video.addEventListener('ended', function () {
-      video.currentTime = 0;
-      video.play();
-    });
   };
+  // add event listener to loop video
+  // video.addEventListener('ended', function () {
+  //   video.currentTime = 0;
+  //   video.play();
+  // });
 }
 
 function displayRegularVideoFeed() {
@@ -139,27 +145,7 @@ function displayRegularVideoFeed() {
   ) {
     stopVideoFeed();
   }
-
-  video = document.createElement('video');
-  video.src = 'assets/campfire.mp4';
-  video.id = 'regularVideo';
-  video.onloadedmetadata = function () {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    video.play();
-
-    const drawFrame = () => {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      requestAnimationFrame(drawFrame);
-    };
-    requestAnimationFrame(drawFrame);
-
-    // add event listener to loop video
-    // video.addEventListener('ended', function () {
-    //   video.currentTime = 0;
-    //   video.play();
-    // });
-  };
+  assignVideoToCanvas('regularVideo');
 }
 
 function stopVideoFeed() {
