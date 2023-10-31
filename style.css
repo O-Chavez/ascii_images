@@ -6,13 +6,13 @@
 
 body {
   background: black;
-
   margin: 0;
   padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
+  flex-direction: column;
 }
 
 .container {
@@ -20,8 +20,8 @@ body {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  max-width: 750px;
-  max-height: 700px;
+  width: 750px;
+  height: 500px;
 }
 
 #canvas {
@@ -36,22 +36,31 @@ body {
 
 .controls > input {
   width: 60%;
+  margin-top: 10px;
 }
 
 .controls > label {
   width: 65%;
   color: white;
   font-size: 15px;
+  margin-top: 10px;
 }
 
 .inputContiner {
   color: white;
   display: flex;
   gap: 10px;
+  margin-bottom: 5px;
 }
 
 .inputContiner > label {
   width: 35%;
   color: white;
   font-size: 15px;
+}
+
+h1 {
+  color: white;
+  font-size: 30px;
+  margin-bottom: 50px;
 }

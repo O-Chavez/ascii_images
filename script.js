@@ -54,7 +54,12 @@ function handleInputRadioChange() {
       displayAsciiWebcamFeed();
     }
   } else if (imgRadio.checked) {
-    displayImage();
+    if (resolutionSlider.value == 1) {
+      resolutionLabel.innerHTML = 'Original Image';
+      displayDefaultImage();
+    } else {
+      displayImage();
+    }
   } else if (videoRadio.checked) {
     if (resolutionSlider.value < 5) {
       resolutionLabel.innerHTML = 'Original Image';
@@ -163,6 +168,11 @@ function displayImage() {
   handleImageDisplay((effect) => {
     effect.draw(parseInt(resolutionSlider.value) || 10);
   });
+}
+
+function displayDefaultImage() {
+  console.log('Displaying default image');
+  ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
 }
 
 async function handleImageDisplay(drawFunction) {
