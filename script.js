@@ -1,35 +1,38 @@
 import { AsciiEffect, Cell } from './ascii_effect.js';
 
+// Get DOM elements
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
 const resolutionSlider = document.getElementById('resolution');
 const resolutionLabel = document.getElementById('resolutionLabel');
 const webcamRadio = document.getElementById('webcam');
 const imgRadio = document.getElementById('img');
 const videoRadio = document.getElementById('video');
 
+// Variables for image and video
 let defaultImage = new Image();
 let video = null;
 
+// Event listeners
 resolutionSlider.addEventListener('input', handleResolutionSlider);
 webcamRadio.addEventListener('change', handleInputRadioChange);
 imgRadio.addEventListener('change', handleInputRadioChange);
 videoRadio.addEventListener('change', handleInputRadioChange);
 
+// Initialize default image
 initDefaultImage();
 
-function initDefaultImage() {
-  fetch('assets/default_image.txt')
-    .then((response) => response.text())
-    .then((base64String) => {
-      defaultImage.src = base64String;
-    })
-    .catch((error) => {
-      console.error('Error loading image:', error);
-    });
+async function initDefaultImage() {
+  try {
+    const response = await fetch('assets/default_image.txt');
+    const base64String = await response.text();
+    defaultImage.src = base64String;
+  } catch (error) {
+    console.error('Error loading image:', error);
+  }
 }
 
+// Handle resolution slider change
 function handleResolutionSlider() {
   const resolution = parseInt(resolutionSlider.value);
   if (resolution === 1) {
@@ -41,6 +44,7 @@ function handleResolutionSlider() {
   }
 }
 
+// Handle input radio change
 function handleInputRadioChange() {
   if (webcamRadio.checked) {
     if (resolutionSlider.value < 5) {
@@ -61,6 +65,7 @@ function handleInputRadioChange() {
   }
 }
 
+// Handle webcam display
 function displayDefaultWebcam() {
   handleWebcamDisplay('webcamVideo', (effect) => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -82,8 +87,7 @@ function handleWebcamDisplay(id, drawFunction) {
       video.srcObject = stream;
       video.id = id;
       video.onloadedmetadata = function () {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        setCanvasDimensions(video.videoWidth, video.videoHeight);
         video.play();
 
         const lastTime = 0;
@@ -108,6 +112,7 @@ function handleWebcamDisplay(id, drawFunction) {
     });
 }
 
+// Handle video display
 function displayRegularVideoFeed() {
   handleVideoDisplay('regularVideo', (effect) => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -126,8 +131,7 @@ function handleVideoDisplay(id, drawFunction) {
   video.src = 'assets/campfire.mp4';
   video.id = id;
   video.onloadedmetadata = function () {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    setCanvasDimensions(video.videoWidth, video.videoHeight);
     video.play();
 
     const drawFrame = () => {
@@ -141,34 +145,39 @@ function handleVideoDisplay(id, drawFunction) {
   };
 }
 
+// Handle image display
 function displayImage() {
   handleImageDisplay((effect) => {
     effect.draw(parseInt(resolutionSlider.value) || 10);
   });
 }
 
-function handleImageDisplay(drawFunction) {
+async function handleImageDisplay(drawFunction) {
   stopVideoFeed();
-  fetch('assets/default_image.txt')
-    .then((response) => response.text())
-    .then((base64String) => {
-      defaultImage.src = base64String;
-      defaultImage.onload = function initalize() {
-        canvas.width = defaultImage.width;
-        canvas.height = defaultImage.height;
-        drawFunction(
-          new AsciiEffect(
-            ctx,
-            defaultImage,
-            defaultImage.width,
-            defaultImage.height
-          )
-        );
-      };
-    })
-    .catch((error) => {
-      console.error('Error loading image:', error);
-    });
+  try {
+    const response = await fetch('assets/default_image.txt');
+    const base64String = await response.text();
+    defaultImage.src = base64String;
+    defaultImage.onload = function initalize() {
+      setCanvasDimensions(defaultImage.width, defaultImage.height);
+      drawFunction(
+        new AsciiEffect(
+          ctx,
+          defaultImage,
+          defaultImage.width,
+          defaultImage.height
+        )
+      );
+    };
+  } catch (error) {
+    console.error('Error loading image:', error);
+  }
+}
+
+// Set canvas dimensions
+function setCanvasDimensions(width, height) {
+  canvas.width = width;
+  canvas.height = height;
 }
 
 function stopVideoFeed() {
