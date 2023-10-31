@@ -3,10 +3,8 @@ import { AsciiEffect, Cell } from './ascii_effect.js';
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-//  resolution slider
 const resolutionSlider = document.getElementById('resolution');
 const resolutionLabel = document.getElementById('resolutionLabel');
-resolutionSlider.addEventListener('input', handelResolutionSlider);
 const webcamRadio = document.getElementById('webcam');
 const imgRadio = document.getElementById('img');
 const videoRadio = document.getElementById('video');
@@ -14,29 +12,12 @@ const videoRadio = document.getElementById('video');
 let defaultImage = new Image();
 let video = null;
 
-initDefaultImage();
+resolutionSlider.addEventListener('input', handleResolutionSlider);
+webcamRadio.addEventListener('change', handleInputRadioChange);
+imgRadio.addEventListener('change', handleInputRadioChange);
+videoRadio.addEventListener('change', handleInputRadioChange);
 
-// input options
-const inputRadios = document.querySelectorAll('input[name="input"]');
-inputRadios.forEach((radio) => {
-  radio.addEventListener('change', () => {
-    if (radio.value === 'img') {
-      stopVideoFeed();
-      displayImage();
-    } else if (radio.value === 'webcam') {
-      if (
-        video.id === 'asciiVideo' ||
-        video.id === 'regularVideo' ||
-        video.id === 'webcamVideo'
-      ) {
-        stopVideoFeed();
-        displayAsciiWebcamFeed();
-      }
-    } else if (radio.value === 'video') {
-      displayVideoAsciiFeed();
-    }
-  });
-});
+initDefaultImage();
 
 function initDefaultImage() {
   fetch('assets/default_image.txt')
@@ -49,62 +30,98 @@ function initDefaultImage() {
     });
 }
 
-function handelResolutionSlider() {
+function handleResolutionSlider() {
   const resolution = parseInt(resolutionSlider.value);
   if (resolution === 1) {
-    // ----- full resolution -----
     resolutionLabel.innerHTML = 'Original Image';
-    if (webcamRadio.checked) {
-      // #----- webcam -----#
-      displayDefaultWebcam();
-    } else if (imgRadio.checked) {
-      // #----- IMG -----#
-      ctx.drawImage(defaultImage, 0, 0, canvas.width, canvas.height);
-    } else if (videoRadio.checked) {
-      // #----- video -----#
-      displayRegularVideoFeed();
-    }
+    handleInputRadioChange();
   } else {
-    // ----- ascii resolution -----
-    resolutionLabel.innerHTML = 'Resolution: ' + resolution + ' px';
-    if (webcamRadio.checked) {
-      // #----- webcam -----#
-      if (resolution < 5) {
-        resolutionLabel.innerHTML = 'Original Image';
-        displayDefaultWebcam();
-      } else {
-        displayAsciiWebcamFeed();
-      }
-    } else if (imgRadio.checked) {
-      // #----- IMG -----#
-      displayImage();
-    } else if (videoRadio.checked) {
-      // #----- video -----#
-      if (resolution < 5) {
-        resolutionLabel.innerHTML = 'Original Image';
-        displayRegularVideoFeed();
-      } else {
-        if (video.id == 'regularVideo') {
-          displayVideoAsciiFeed();
-        }
-      }
+    resolutionLabel.innerHTML = `Resolution: ${resolution} px`;
+    handleInputRadioChange();
+  }
+}
+
+function handleInputRadioChange() {
+  if (webcamRadio.checked) {
+    if (resolutionSlider.value < 5) {
+      resolutionLabel.innerHTML = 'Original Image';
+      displayDefaultWebcam();
+    } else {
+      displayAsciiWebcamFeed();
+    }
+  } else if (imgRadio.checked) {
+    displayImage();
+  } else if (videoRadio.checked) {
+    if (resolutionSlider.value < 5) {
+      resolutionLabel.innerHTML = 'Original Image';
+      displayRegularVideoFeed();
+    } else {
+      displayVideoAsciiFeed();
     }
   }
+}
+
+function displayDefaultWebcam() {
+  handleWebcamDisplay('webcamVideo', (effect) => {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  });
+}
+
+function displayAsciiWebcamFeed() {
+  handleWebcamDisplay('asciiWebcamVideo', (effect) => {
+    effect.draw(parseInt(resolutionSlider.value) || 10);
+  });
+}
+
+function handleWebcamDisplay(id, drawFunction) {
+  stopVideoFeed();
+  navigator.mediaDevices
+    .getUserMedia({ video: true })
+    .then((stream) => {
+      video = document.createElement('video');
+      video.srcObject = stream;
+      video.id = id;
+      video.onloadedmetadata = function () {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        video.play();
+
+        const lastTime = 0;
+        const fps = 30;
+        const interval = 1000 / fps;
+
+        const drawFrame = (currentTime) => {
+          const deltaTime = currentTime - lastTime;
+          if (deltaTime >= interval) {
+            drawFunction(
+              new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight)
+            );
+          }
+          requestAnimationFrame(drawFrame);
+        };
+
+        requestAnimationFrame(drawFrame);
+      };
+    })
+    .catch((error) => {
+      console.error('Error loading webcam:', error);
+    });
+}
+
+function displayRegularVideoFeed() {
+  handleVideoDisplay('regularVideo', (effect) => {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  });
 }
 
 function displayVideoAsciiFeed() {
-  if (
-    video !== null &&
-    (video.id === 'regularVideo' ||
-      video.id === 'webcamVideo' ||
-      video.id === 'asciiWebcamVideo')
-  ) {
-    stopVideoFeed();
-  }
-  assignVideoToCanvas('asciiVideo');
+  handleVideoDisplay('asciiVideo', (effect) => {
+    effect.draw(parseInt(resolutionSlider.value) || 10);
+  });
 }
 
-function assignVideoToCanvas(id) {
+function handleVideoDisplay(id, drawFunction) {
+  stopVideoFeed();
   video = document.createElement('video');
   video.src = 'assets/campfire.mp4';
   video.id = id;
@@ -114,70 +131,39 @@ function assignVideoToCanvas(id) {
     video.play();
 
     const drawFrame = () => {
-      if (id === 'asciiVideo') {
-        const effect = new AsciiEffect(
-          ctx,
-          video,
-          video.videoWidth,
-          video.videoHeight
-        );
-        effect.draw(parseInt(resolutionSlider.value) ?? 10);
-      } else {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      }
+      drawFunction(
+        new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight)
+      );
       requestAnimationFrame(drawFrame);
     };
+
     requestAnimationFrame(drawFrame);
   };
-  // add event listener to loop video
-  // video.addEventListener('ended', function () {
-  //   video.currentTime = 0;
-  //   video.play();
-  // });
-}
-
-function displayRegularVideoFeed() {
-  if (
-    video !== null &&
-    (video.id === 'asciiVideo' ||
-      video.id === 'webcamVideo' ||
-      video.id === 'asciiWebcamVideo')
-  ) {
-    stopVideoFeed();
-  }
-  assignVideoToCanvas('regularVideo');
-}
-
-function stopVideoFeed() {
-  if (video) {
-    console.log('stopping video feed', video.id);
-    video.pause();
-    video.remove();
-    video = null;
-  }
 }
 
 function displayImage() {
-  // disable video feed if playing
-  if (video) {
-    stopVideoFeed();
-  }
-  // Handle IMG input
+  handleImageDisplay((effect) => {
+    effect.draw(parseInt(resolutionSlider.value) || 10);
+  });
+}
+
+function handleImageDisplay(drawFunction) {
+  stopVideoFeed();
   fetch('assets/default_image.txt')
     .then((response) => response.text())
     .then((base64String) => {
       defaultImage.src = base64String;
-      let effect;
       defaultImage.onload = function initalize() {
         canvas.width = defaultImage.width;
         canvas.height = defaultImage.height;
-        effect = new AsciiEffect(
-          ctx,
-          defaultImage,
-          defaultImage.width,
-          defaultImage.height
+        drawFunction(
+          new AsciiEffect(
+            ctx,
+            defaultImage,
+            defaultImage.width,
+            defaultImage.height
+          )
         );
-        effect.draw(parseInt(resolutionSlider.value) ?? 10);
       };
     })
     .catch((error) => {
@@ -185,64 +171,18 @@ function displayImage() {
     });
 }
 
-function displayAsciiWebcamFeed() {
-  navigator.mediaDevices
-    .getUserMedia({ video: true })
-    .then((stream) => {
-      video = document.createElement('video');
-      video.srcObject = stream;
-      video.id = 'asciiWebcamVideo';
-      video.onloadedmetadata = function () {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        video.play();
-
-        let lastTime = 0;
-        const fps = 30; // set the desired fps
-        const interval = 1000 / fps;
-        const drawFrame = (currentTime) => {
-          const deltaTime = currentTime - lastTime;
-          if (deltaTime >= interval) {
-            lastTime = currentTime;
-            const effect = new AsciiEffect(
-              ctx,
-              video,
-              video.videoWidth,
-              video.videoHeight
-            );
-            effect.draw(parseInt(resolutionSlider.value) ?? 10);
-          }
-          requestAnimationFrame(drawFrame);
-        };
-        requestAnimationFrame(drawFrame);
-      };
-    })
-    .catch((error) => {
-      console.error('Error loading webcam:', error);
-    });
+function stopVideoFeed() {
+  if (video) {
+    console.log('Stopping video feed', video.id);
+    video.pause();
+    video.remove();
+    video = null;
+  }
 }
 
-function displayDefaultWebcam() {
-  navigator.mediaDevices
-    .getUserMedia({ video: true })
-    .then((stream) => {
-      video = document.createElement('video');
-      video.srcObject = stream;
-      video.id = 'webcamVideo';
-      video.onloadedmetadata = function () {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        video.play();
-        const drawFrame = () => {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          requestAnimationFrame(drawFrame);
-        };
-        requestAnimationFrame(drawFrame);
-      };
-    })
-    .catch((error) => {
-      console.error('Error loading webcam:', error);
-    });
+// Initial setup
+function initialSetup() {
+  displayImage();
 }
 
-displayImage();
+initialSetup();
