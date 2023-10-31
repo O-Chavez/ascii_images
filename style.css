@@ -47,7 +47,7 @@ body {
 .inputContiner {
   color: white;
   display: flex;
-  gap: 20px;
+  gap: 10px;
 }
 
 .inputContiner > label {

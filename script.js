@@ -79,7 +79,12 @@ function displayAsciiWebcamFeed() {
 }
 
 function handleWebcamDisplay(id, drawFunction) {
-  stopVideoFeed();
+  if (!video || video.id !== id) {
+    stopVideoFeed();
+    video = document.createElement('video');
+    video.src = 'assets/campfire.mp4';
+    video.id = id;
+  }
   navigator.mediaDevices
     .getUserMedia({ video: true })
     .then((stream) => {
@@ -98,7 +103,12 @@ function handleWebcamDisplay(id, drawFunction) {
           const deltaTime = currentTime - lastTime;
           if (deltaTime >= interval) {
             drawFunction(
-              new AsciiEffect(ctx, video, video.videoWidth, video.videoHeight)
+              new AsciiEffect(
+                ctx,
+                video,
+                video.videoWidth ?? 640,
+                video.videoHeight ?? 480
+              )
             );
           }
           requestAnimationFrame(drawFrame);
@@ -114,7 +124,7 @@ function handleWebcamDisplay(id, drawFunction) {
 
 // Handle video display
 function displayRegularVideoFeed() {
-  handleVideoDisplay('regularVideo', (effect) => {
+  handleVideoDisplay('regularVideo', () => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   });
 }
@@ -126,10 +136,13 @@ function displayVideoAsciiFeed() {
 }
 
 function handleVideoDisplay(id, drawFunction) {
-  stopVideoFeed();
-  video = document.createElement('video');
-  video.src = 'assets/campfire.mp4';
-  video.id = id;
+  if (!video || video.id !== id) {
+    stopVideoFeed();
+    video = document.createElement('video');
+    video.src = 'assets/campfire.mp4';
+    video.id = id;
+  }
+
   video.onloadedmetadata = function () {
     setCanvasDimensions(video.videoWidth, video.videoHeight);
     video.play();
