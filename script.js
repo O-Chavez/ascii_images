@@ -89,6 +89,9 @@ function handleWebcamDisplay(id, drawFunction) {
     video = document.createElement('video');
     video.src = 'assets/campfire.mp4';
     video.id = id;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.muted = true;
   }
   navigator.mediaDevices
     .getUserMedia({ video: true })
@@ -96,6 +99,9 @@ function handleWebcamDisplay(id, drawFunction) {
       video = document.createElement('video');
       video.srcObject = stream;
       video.id = id;
+      video.playsInline = true;
+      video.autoplay = true;
+      video.muted = true;
       video.onloadedmetadata = function () {
         setCanvasDimensions(video.videoWidth, video.videoHeight);
         video.play();
@@ -146,6 +152,9 @@ function handleVideoDisplay(id, drawFunction) {
     video = document.createElement('video');
     video.src = 'assets/campfire.mp4';
     video.id = id;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.muted = true;
   }
 
   video.onloadedmetadata = function () {
